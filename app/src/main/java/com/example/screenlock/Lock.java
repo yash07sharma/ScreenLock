@@ -37,6 +37,8 @@ public class Lock extends View {
     private boolean touched[][]=new boolean[3][3];
     private String pattern,password;
     Vibrator vib;
+    boolean freeze;//freezes the touch listener of view when thread runs
+
     public Lock(Context context) {
         super(context);
         this.context=context;
@@ -67,6 +69,7 @@ public class Lock extends View {
         password="03678";//hard-coded pattern for password
         pattern="";
         vib=(Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
+        freeze=false;
         for(int i=0;i<3;i++)
             for(int j=0;j<3;j++)
                 touched[i][j]=false;
@@ -77,23 +80,7 @@ public class Lock extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        for(int i=0;i<3;i++)
-        {
-            for(int j=0;j<3;j++)
-            {
-                paint.setColor(primaryColor);
-                canvas.drawCircle(100f+i*200f,100f+j*200f,40f,paint);
-                paint.setColor(Color.WHITE);
-                canvas.drawCircle(100f+200f*i,100f+200f*j,20f,paint);
-            }
-        }
-        paint.setColor(primaryColor);
-        for(int i=0;i<centersTouched;i++)//Touched centers
-            canvas.drawCircle(X.get(i),Y.get(i),20f,paint);
-
-        paint.setStrokeWidth(20f);
-        for(int i=0;i<centersTouched-1;i++)//Lines b/w touched centers
-            canvas.drawLine(X.get(i),Y.get(i),X.get(i+1),Y.get(i+1),paint);
+        drawBoard(canvas);
 
         switch(choice){
             case 1:
@@ -101,11 +88,33 @@ public class Lock extends View {
                 break;
             case 2:
                 if(centersTouched>0) canvas.drawLine(X.get(centersTouched-1),Y.get(centersTouched-1),current.first,current.second,paint);
+                break;
         }
+    }
+
+    public void drawBoard(Canvas canvas)
+    {
+        for(int i=0;i<3;i++)
+        {
+            for(int j=0;j<3;j++)
+            {
+                paint.setColor(primaryColor);
+                canvas.drawCircle(100f+i*200f,100f+j*200f,40f,paint);
+                paint.setColor((touched[i][j])?primaryColor:Color.WHITE);
+                canvas.drawCircle(100f+200f*i,100f+200f*j,20f,paint);
+            }
+        }
+        paint.setColor(primaryColor);
+        paint.setStrokeWidth(20f);
+        for(int i=0;i<centersTouched-1;i++)//Lines b/w touched centers
+            canvas.drawLine(X.get(i),Y.get(i),X.get(i+1),Y.get(i+1),paint);
+
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
+        if(freeze) return true;
+
         int action=motionEvent.getAction();
         float x=motionEvent.getX();
         float y=motionEvent.getY();
@@ -141,13 +150,16 @@ public class Lock extends View {
                     vibrate(200,100);
                     Toast.makeText(getContext(),"Incorrect !!",Toast.LENGTH_SHORT).show();
                 }
+
+                freeze=true;
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         init();
                         invalidate();
+                        freeze=false;
                     }
-                },4000);
+                },3000);
                 break;
 
             case MotionEvent.ACTION_MOVE:
@@ -162,7 +174,6 @@ public class Lock extends View {
                             if(!touched[ind(avgX)][ind(avgY)] && ((int)avgX)%200!=0 && ((int)avgY)%200!=0)
                             {
                                 touched[ind(avgX)][ind(avgY)]=true;
-                                Log.d("AverageCenter","x : "+avgX+" :: y : "+avgY);
                                 addCenter(avgX,avgY);
                             }
                         }
@@ -180,17 +191,12 @@ public class Lock extends View {
         return true;
     }
     protected int ind(float z)
-    {
-        return ((int)z-100)/200;
-    }
+    { return ((int)z-100)/200; }
     protected float near(float z)
-    {
-        return (((int)z)/200)*200+100f;
-    }
+    { return (((int)z)/200)*200+100f; }
     protected void addCenter(float x,float y)
     {
-        X.add(x);
-        Y.add(y);
+        X.add(x);Y.add(y);
         pattern+=((((int)x-100)/200)+((int)y-100)*3/200);
         centersTouched++;
         vibrate(50,VibrationEffect.DEFAULT_AMPLITUDE);
