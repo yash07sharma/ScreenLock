@@ -7,7 +7,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -23,10 +26,8 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-/**
- * TODO: document your custom view class.
- */
 public class Lock extends View {
+    private Context context;
     private int primaryColor;
     private Paint paint;
     private List<Float> X,Y;
@@ -35,18 +36,22 @@ public class Lock extends View {
     private int choice;
     private boolean touched[][]=new boolean[3][3];
     private String pattern,password;
+    Vibrator vib;
     public Lock(Context context) {
         super(context);
+        this.context=context;
         init();
     }
 
     public Lock(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.context=context;
         init();
     }
 
     public Lock(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        this.context=context;
         init();
     }
 
@@ -61,6 +66,7 @@ public class Lock extends View {
         current=new Pair<>(0f,0f);
         password="03678";//hard-coded pattern for password
         pattern="";
+        vib=(Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
         for(int i=0;i<3;i++)
             for(int j=0;j<3;j++)
                 touched[i][j]=false;
@@ -126,11 +132,13 @@ public class Lock extends View {
                 if(pattern.equals(password)&&centersTouched>0){
                     primaryColor=Color.GREEN;
                     invalidate();
+                    vibrate(120,10);
                     Toast.makeText(getContext(),"Correct !!",Toast.LENGTH_SHORT).show();
                 }
                 else if(centersTouched>0){
                     primaryColor=Color.RED;
                     invalidate();
+                    vibrate(200,100);
                     Toast.makeText(getContext(),"Incorrect !!",Toast.LENGTH_SHORT).show();
                 }
                 new Handler().postDelayed(new Runnable() {
@@ -147,13 +155,14 @@ public class Lock extends View {
                     if( !touched[ind(nearX)][ind(nearY)] ) {
                         touched[ind(nearX)][ind(nearY)] = true;
 
-                        if(Math.abs(nearX-X.get(centersTouched-1))>1f || Math.abs(nearY-Y.get(centersTouched-1))>1f)
+                        if(centersTouched>0 && (Math.abs(nearX-X.get(centersTouched-1))>=200f || Math.abs(nearY-Y.get(centersTouched-1))>=200f))
                         {
                             float avgX=(nearX+X.get(centersTouched-1))/2;
                             float avgY=(nearY+Y.get(centersTouched-1))/2;
-                            if(!touched[ind(avgX)][ind(avgY)])
+                            if(!touched[ind(avgX)][ind(avgY)] && ((int)avgX)%200!=0 && ((int)avgY)%200!=0)
                             {
                                 touched[ind(avgX)][ind(avgY)]=true;
+                                Log.d("AverageCenter","x : "+avgX+" :: y : "+avgY);
                                 addCenter(avgX,avgY);
                             }
                         }
@@ -184,5 +193,13 @@ public class Lock extends View {
         Y.add(y);
         pattern+=((((int)x-100)/200)+((int)y-100)*3/200);
         centersTouched++;
+        vibrate(50,VibrationEffect.DEFAULT_AMPLITUDE);
+    }
+    protected void vibrate(int time,int amplitude)
+    {
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O)
+            vib.vibrate(VibrationEffect.createOneShot(time,amplitude));
+        else
+            vib.vibrate(time);
     }
 }
