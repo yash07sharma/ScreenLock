@@ -104,22 +104,19 @@ public class Lock extends View {
         float x=motionEvent.getX();
         float y=motionEvent.getY();
 
-        float nearX=(((int)x)/200)*200+100f;
-        float nearY=(((int)y)/200)*200+100f;
+        float nearX=near(x);
+        float nearY=near(y);
         float dist=(float)Math.sqrt(Math.pow(nearX-x,2)+(float)Math.pow(nearY-y,2));
 
         switch(action)
         {
             case MotionEvent.ACTION_DOWN:
-                if(x>600f || y>600f)
-                    return true;
-                else if(dist<=40 && !touched[((int)nearX-100)/200][((int)nearY-100)/200])
+                if(x>600f || y>600f) return true;
+                else if(dist<=40 && !touched[ind(nearX)][ind(nearY)])
                 {
                     choice=1;
-                    touched[((int)nearX-100)/200][((int)nearY-100)/200]=true;
-                    X.add(nearX);Y.add(nearY);
-                    centersTouched++;
-                    pattern+=((((int)nearX-100)*3/200)+((int)nearY-100)/200);
+                    touched[ind(nearX)][ind(nearY)]=true;
+                    addCenter(nearX,nearY);
                     invalidate();
                 }
                 break;
@@ -142,17 +139,25 @@ public class Lock extends View {
                         init();
                         invalidate();
                     }
-                },3000);
+                },4000);
                 break;
 
             case MotionEvent.ACTION_MOVE:
                 if(dist<=40 && x<=600f && y<=600f) {
-                    if( !touched[((int)nearX-100)/200][((int)nearY-100)/200]) {
-                        touched[((int) nearX - 100) / 200][((int) nearY - 100) / 200] = true;
-                        X.add(nearX);Y.add(nearY);
-                        pattern+=((((int)nearX-100)/200)+((int)nearY-100)*3/200);
-                        centersTouched++;
+                    if( !touched[ind(nearX)][ind(nearY)] ) {
+                        touched[ind(nearX)][ind(nearY)] = true;
 
+                        if(Math.abs(nearX-X.get(centersTouched-1))>1f || Math.abs(nearY-Y.get(centersTouched-1))>1f)
+                        {
+                            float avgX=(nearX+X.get(centersTouched-1))/2;
+                            float avgY=(nearY+Y.get(centersTouched-1))/2;
+                            if(!touched[ind(avgX)][ind(avgY)])
+                            {
+                                touched[ind(avgX)][ind(avgY)]=true;
+                                addCenter(avgX,avgY);
+                            }
+                        }
+                        addCenter(nearX,nearY);
                     }
                     choice=1;
                 }
@@ -164,5 +169,20 @@ public class Lock extends View {
                 break;
         }
         return true;
+    }
+    protected int ind(float z)
+    {
+        return ((int)z-100)/200;
+    }
+    protected float near(float z)
+    {
+        return (((int)z)/200)*200+100f;
+    }
+    protected void addCenter(float x,float y)
+    {
+        X.add(x);
+        Y.add(y);
+        pattern+=((((int)x-100)/200)+((int)y-100)*3/200);
+        centersTouched++;
     }
 }
