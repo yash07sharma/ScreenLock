@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class Lock extends View {
+public class PatternSet extends View {
     private Context context;
     private int primaryColor;
     private Paint paint;
@@ -36,23 +36,22 @@ public class Lock extends View {
     private int choice;
     private boolean touched[][]=new boolean[3][3];
     private String pattern;
-    private String password="03678";
     Vibrator vib;
     boolean freeze;//freezes the touch listener of view when thread runs
 
-    public Lock(Context context) {
+    public PatternSet(Context context) {
         super(context);
         this.context=context;
         init();
     }
 
-    public Lock(Context context, AttributeSet attrs) {
+    public PatternSet(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context=context;
         init();
     }
 
-    public Lock(Context context, AttributeSet attrs, int defStyle) {
+    public PatternSet(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         this.context=context;
         init();
@@ -137,30 +136,7 @@ public class Lock extends View {
                 break;
 
             case MotionEvent.ACTION_UP:
-                choice=0;
-                if(pattern.equals(password)&&centersTouched>0){
-                    primaryColor=Color.GREEN;
-                    invalidate();
-                    vibrate(120,10);
-                    Toast.makeText(getContext(),"Correct !!",Toast.LENGTH_SHORT).show();
-                }
-                else if(centersTouched>0){
-                    primaryColor=Color.RED;
-                    invalidate();
-                    vibrate(200,100);
-                    Toast.makeText(getContext(),"Incorrect !!",Toast.LENGTH_SHORT).show();
-                }
-
-                freeze=true;
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        init();
-                        invalidate();
-                        freeze=false;
-                    }
-                },3000);
-                break;
+                return false;
 
             case MotionEvent.ACTION_MOVE:
                 if(dist<=40 && x<=600f && y<=600f) {
@@ -186,7 +162,6 @@ public class Lock extends View {
                     choice = 2;
                 }
                 invalidate();
-                break;
         }
         return true;
     }
@@ -208,5 +183,5 @@ public class Lock extends View {
         else
             vib.vibrate(time);
     }
-    protected void setPassword(String password){this.password=password;}
+    protected String getPattern(){return pattern;}
 }
